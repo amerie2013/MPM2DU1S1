@@ -40,12 +40,9 @@
             --primary-bg: #f2faf2;
             --primary-border: #8bc34a;
             --text-dark: #2e4d2e;
-            --text-light: #557755;
             --button-bg: #4caf50;
             --button-hover: #388e3c;
-            --correct-color: #2e7d32;
             --error-color: #d32f2f;
-            --warning-color: #ffa000;
         }
         
         .header {
@@ -60,15 +57,20 @@
             border: 2px solid var(--primary-border);
             border-radius: 10px;
             padding: 10px;
-            height: 450px;
+            height: 480px;
             margin-bottom: 15px;
         }
         
+        /* CENTERING LOGIC ADDED HERE */
         .geogebra-frame-container {
             width: 100%;
             height: 100%;
             border-radius: 6px;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white; 
         }
 
         .stats-bar {
@@ -85,7 +87,6 @@
             text-align: center; 
             font-weight: bold; 
             font-size: 1.1em;
-            padding: 5px 10px;
             min-width: 100px;
         }
         
@@ -94,9 +95,7 @@
             animation: blink 1s infinite; 
         }
         
-        @keyframes blink { 
-            50% { opacity: 0.5; } 
-        }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
         .coordinates-section {
             background: var(--primary-bg);
@@ -139,28 +138,16 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 1em;
             transition: background 0.3s;
         }
         
-        .game-button:hover {
-            background: var(--button-hover);
-        }
+        .game-button:hover { background: var(--button-hover); }
 
-        .feedback {
-            margin: 10px 0;
-            font-weight: bold;
-            min-height: 24px;
-            padding: 8px;
-            border-radius: 5px;
-        }
+        .feedback { margin: 10px 0; font-weight: bold; min-height: 24px; padding: 8px; }
 
         .game-over {
             position: absolute;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9);
             color: white;
             display: none;
@@ -171,20 +158,9 @@
             border-radius: 8px;
         }
 
-        .hidden { 
-            display: none !important; 
-        }
+        .hidden { display: none !important; }
         
-        .coordinate-display {
-            text-align: center;
-            padding: 10px;
-            font-size: 1.2em;
-        }
-        
-        .coordinate-display h3 {
-            color: var(--text-dark);
-            margin-bottom: 5px;
-        }
+        .coordinate-display { text-align: center; padding: 10px; font-size: 1.2em; }
         
         .timer-bar {
             height: 8px;
@@ -224,9 +200,9 @@
         <div class="geogebra-section">
             <div class="geogebra-frame-container">
                 <iframe src="https://www.geogebra.org/material/iframe/id/qvxzujwg/width/800/height/600/border/888888/sfsb/true/smb/false/stb/false/stbh/false/ai/false/asb/false/sri/false/rc/false/ld/false/sdz/true/ctl/false" 
-                        width="100%" 
-                        height="100%" 
-                        style="border:0;">
+                        width="800" 
+                        height="600" 
+                        style="border:0; max-width: 100%; max-height: 100%;">
                 </iframe>
             </div>
         </div>
@@ -235,11 +211,11 @@
             <div style="display: flex; justify-content: space-around; width: 100%;">
                 <div class="coordinate-display">
                     <h3>Point A (X₁, Y₁)</h3>
-                    <div id="ptA">$$ A = (0, 0) $$</div>
+                    <div id="ptA"></div>
                 </div>
                 <div class="coordinate-display">
                     <h3>Point B (X₂, Y₂)</h3>
-                    <div id="ptB">$$ B = (0, 0) $$</div>
+                    <div id="ptB"></div>
                 </div>
             </div>
         </div>
@@ -248,8 +224,8 @@
             <h2 style="margin-bottom: 10px; color: var(--text-dark);">Enter Midpoint Coordinates</h2>
             <div id="feedback" class="feedback"></div>
             <div class="input-row">
-                <div style="display: flex; align-items: center; gap: 5px;">$$x_m = $$ <input type="number" id="ansX" step="0.01"></div>
-                <div style="display: flex; align-items: center; gap: 5px;">$$y_m = $$ <input type="number" id="ansY" step="0.01"></div>
+                <div style="display: flex; align-items: center; gap: 5px;">$$x_m = $$ <input type="number" id="ansX" step="0.5"></div>
+                <div style="display: flex; align-items: center; gap: 5px;">$$y_m = $$ <input type="number" id="ansY" step="0.5"></div>
             </div>
             <button id="submitBtn" class="game-button">Submit Answer</button>
             <button id="nextBtn" class="game-button hidden">Next Question</button>
@@ -263,254 +239,72 @@
     </div>
 
     <script>
-        // Wait for the DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Game starting..."); // Debug log
-            
-            // Game variables
-            let score = 0;
-            let errors = 0;
-            let timeLeft = 120;
-            let gameActive = true;
-            let currentCoords = {};
-            let timerInterval = null;
+            let score = 0, errors = 0, timeLeft = 120, gameActive = true, currentCoords = {}, timerInterval = null;
+            const timerEl = document.getElementById('timer'), timerProgressEl = document.getElementById('timerProgress'), scoreEl = document.getElementById('score'), errorsEl = document.getElementById('errors');
+            const ptAEl = document.getElementById('ptA'), ptBEl = document.getElementById('ptB'), feedbackEl = document.getElementById('feedback');
+            const ansX = document.getElementById('ansX'), ansY = document.getElementById('ansY'), submitBtn = document.getElementById('submitBtn'), nextBtn = document.getElementById('nextBtn');
+            const gameOverEl = document.getElementById('gameOver'), overTitleEl = document.getElementById('overTitle'), overStatsEl = document.getElementById('overStats');
 
-            // Get DOM elements
-            const timerEl = document.getElementById('timer');
-            const timerProgressEl = document.getElementById('timerProgress');
-            const scoreEl = document.getElementById('score');
-            const errorsEl = document.getElementById('errors');
-            const ptAEl = document.getElementById('ptA');
-            const ptBEl = document.getElementById('ptB');
-            const feedbackEl = document.getElementById('feedback');
-            const ansX = document.getElementById('ansX');
-            const ansY = document.getElementById('ansY');
-            const submitBtn = document.getElementById('submitBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const gameOverEl = document.getElementById('gameOver');
-            const overTitleEl = document.getElementById('overTitle');
-            const overStatsEl = document.getElementById('overStats');
-
-            // Function to generate random coordinates
-            function generateRandomCoordinate() {
-                return Math.floor(Math.random() * 31) - 15; // -15 to 15
-            }
-
-            // Function to start/restart timer
             function startTimer() {
-                // Clear any existing timer
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                }
-                
-                // Reset time
+                if (timerInterval) clearInterval(timerInterval);
                 timeLeft = 120;
-                timerEl.textContent = timeLeft;
-                updateTimerProgress();
-                timerEl.classList.remove('timer-red');
-                
-                // Start new timer
-                timerInterval = setInterval(function() {
+                timerInterval = setInterval(() => {
                     if (!gameActive) return;
-                    
                     timeLeft--;
                     timerEl.textContent = timeLeft;
-                    updateTimerProgress();
-                    
-                    // Add warning when time is low
-                    if (timeLeft <= 20) {
-                        timerEl.classList.add('timer-red');
-                    }
-                    
-                    if (timeLeft <= 0) {
-                        handleTimeout();
-                    }
+                    timerProgressEl.style.width = (timeLeft / 120 * 100) + '%';
+                    if (timeLeft <= 20) timerEl.classList.add('timer-red');
+                    if (timeLeft <= 0) handleTimeout();
                 }, 1000);
             }
-            
-            // Update timer progress bar
-            function updateTimerProgress() {
-                const progressPercent = (timeLeft / 120) * 100;
-                timerProgressEl.style.width = progressPercent + '%';
-                
-                // Update progress bar color
-                if (timeLeft <= 20) {
-                    timerProgressEl.style.background = '#f44336';
-                } else if (timeLeft <= 60) {
-                    timerProgressEl.style.background = '#ff9800';
-                } else {
-                    timerProgressEl.style.background = '#4caf50';
-                }
-            }
-            
-            // Handle timeout
+
             function handleTimeout() {
-                clearInterval(timerInterval);
                 errors++;
                 errorsEl.textContent = errors;
-                
-                feedbackEl.innerHTML = '<span style="color:orange; font-weight:bold;">⏰ Time\'s Up! Moving to next question...</span>';
-                
-                // Check game end conditions
-                if (errors >= 3) {
-                    setTimeout(function() {
-                        endGame("Too Many Errors!");
-                    }, 1000);
-                    return;
-                }
-                
-                if (score >= 10) {
-                    setTimeout(function() {
-                        endGame("Master Achieved!");
-                    }, 1000);
-                    return;
-                }
-                
-                // Show next button
-                submitBtn.classList.add('hidden');
-                nextBtn.classList.remove('hidden');
+                feedbackEl.innerHTML = '<span style="color:orange;">⏰ Time\'s Up!</span>';
+                if (errors >= 3) endGame("Too Many Errors!");
+                else { submitBtn.classList.add('hidden'); nextBtn.classList.remove('hidden'); }
             }
 
-            // Generate new question
             function newQuestion() {
-                console.log("Generating new question..."); // Debug log
-                
-                // Generate random coordinates
-                currentCoords = {
-                    x1: generateRandomCoordinate(),
-                    y1: generateRandomCoordinate(),
-                    x2: generateRandomCoordinate(),
-                    y2: generateRandomCoordinate()
-                };
-                
-                // Ensure points are not identical
-                while (currentCoords.x1 === currentCoords.x2 && currentCoords.y1 === currentCoords.y2) {
-                    currentCoords.x2 = generateRandomCoordinate();
-                    currentCoords.y2 = generateRandomCoordinate();
-                }
-                
-                console.log("Point A:", currentCoords.x1, currentCoords.y1); // Debug log
-                console.log("Point B:", currentCoords.x2, currentCoords.y2); // Debug log
-                
-                // Update display
-                ptAEl.innerHTML = '$$ A = (' + currentCoords.x1 + ', ' + currentCoords.y1 + ') $$';
-                ptBEl.innerHTML = '$$ B = (' + currentCoords.x2 + ', ' + currentCoords.y2 + ') $$';
-                
-                // Clear inputs and feedback
-                ansX.value = '';
-                ansY.value = '';
-                feedbackEl.textContent = '';
-                
-                // Show/hide buttons
-                submitBtn.classList.remove('hidden');
-                nextBtn.classList.add('hidden');
-                
-                // Focus on first input
-                ansX.focus();
-                
-                // Start timer for this question
+                currentCoords = { x1: Math.floor(Math.random() * 21) - 10, y1: Math.floor(Math.random() * 21) - 10, x2: Math.floor(Math.random() * 21) - 10, y2: Math.floor(Math.random() * 21) - 10 };
+                ptAEl.innerHTML = `$$ A = (${currentCoords.x1}, ${currentCoords.y1}) $$`;
+                ptBEl.innerHTML = `$$ B = (${currentCoords.x2}, ${currentCoords.y2}) $$`;
+                ansX.value = ''; ansY.value = ''; feedbackEl.textContent = '';
+                submitBtn.classList.remove('hidden'); nextBtn.classList.add('hidden');
+                if (window.MathJax) MathJax.typeset();
                 startTimer();
-                
-                // Update MathJax
-                if (window.MathJax && window.MathJax.typeset) {
-                    MathJax.typeset();
-                }
             }
 
-            // Check answer
             function checkAnswer() {
-                if (!gameActive) return;
-                
-                const userX = parseFloat(ansX.value);
-                const userY = parseFloat(ansY.value);
-                
-                // Validate input
-                if (isNaN(userX) || isNaN(userY)) {
-                    feedbackEl.innerHTML = '<span style="color:orange">Please enter valid numbers for both coordinates</span>';
-                    return;
-                }
-                
-                // Calculate correct answer
-                const correctX = (currentCoords.x1 + currentCoords.x2) / 2;
-                const correctY = (currentCoords.y1 + currentCoords.y2) / 2;
-                
-                // Check if answer is correct (allow small rounding errors)
-                const tolerance = 0.001;
-                const isCorrect = Math.abs(userX - correctX) < tolerance && 
-                                 Math.abs(userY - correctY) < tolerance;
-                
-                if (isCorrect) {
-                    // Correct answer
-                    score++;
-                    scoreEl.textContent = score;
-                    feedbackEl.innerHTML = '<span style="color:green; font-weight:bold;">✅ Correct! Well done!</span>';
-                    
-                    if (score >= 10) {
-                        setTimeout(function() {
-                            endGame("Master Achieved!");
-                        }, 1000);
-                    }
+                const ux = parseFloat(ansX.value), uy = parseFloat(ansY.value);
+                if (isNaN(ux) || isNaN(uy)) return;
+                const rx = (currentCoords.x1 + currentCoords.x2) / 2, ry = (currentCoords.y1 + currentCoords.y2) / 2;
+                if (Math.abs(ux - rx) < 0.1 && Math.abs(uy - ry) < 0.1) {
+                    score++; scoreEl.textContent = score;
+                    feedbackEl.innerHTML = '<span style="color:green;">✅ Correct!</span>';
+                    if (score >= 10) endGame("Master Achieved!");
                 } else {
-                    // Incorrect answer
-                    errors++;
-                    errorsEl.textContent = errors;
-                    feedbackEl.innerHTML = '<span style="color:red; font-weight:bold;">❌ Incorrect! Correct Answer: (' + 
-                                           correctX + ', ' + correctY + ')</span>';
-                    
-                    if (errors >= 3) {
-                        setTimeout(function() {
-                            endGame("Too Many Errors!");
-                        }, 1000);
-                    }
+                    errors++; errorsEl.textContent = errors;
+                    feedbackEl.innerHTML = `<span style="color:red;">❌ Incorrect! Answer: (${rx}, ${ry})</span>`;
+                    if (errors >= 3) endGame("Too Many Errors!");
                 }
-                
-                // Stop timer
                 clearInterval(timerInterval);
-                
-                // Show next button
-                submitBtn.classList.add('hidden');
-                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden'); nextBtn.classList.remove('hidden');
             }
 
-            // End game
-            function endGame(message) {
-                gameActive = false;
-                clearInterval(timerInterval);
-                
-                // Show game over screen
+            function endGame(msg) {
+                gameActive = false; clearInterval(timerInterval);
                 gameOverEl.style.display = 'flex';
-                overTitleEl.textContent = message;
-                overStatsEl.textContent = 'Final Score: ' + score + '/10 (Errors: ' + errors + '/3)';
+                overTitleEl.textContent = msg;
+                overStatsEl.textContent = `Final Score: ${score}/10`;
             }
 
-            // Event listeners
             submitBtn.addEventListener('click', checkAnswer);
-            
-            nextBtn.addEventListener('click', function() {
-                newQuestion();
-            });
-            
-            // Enter key support
-            ansX.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') checkAnswer();
-            });
-            
-            ansY.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') checkAnswer();
-            });
-
-            // Initialize game
-            console.log("Initializing game..."); // Debug log
+            nextBtn.addEventListener('click', newQuestion);
             newQuestion();
         });
-        
-        // Fallback in case DOMContentLoaded doesn't fire
-        if (document.readyState === 'loading') {
-            // Still loading, wait for DOMContentLoaded
-        } else {
-            // DOM already loaded, trigger manually
-            document.dispatchEvent(new Event('DOMContentLoaded'));
-        }
     </script>
 </body>
 </html>
